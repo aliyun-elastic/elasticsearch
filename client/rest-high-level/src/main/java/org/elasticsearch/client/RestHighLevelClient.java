@@ -21,6 +21,7 @@ package org.elasticsearch.client;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.logging.log4j.util.Strings;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
@@ -177,6 +178,7 @@ public class RestHighLevelClient implements Closeable {
     private final RestClient client;
     private final NamedXContentRegistry registry;
     private final CheckedConsumer<RestClient, IOException> doClose;
+    private String preEndpoint;
 
     private final IndicesClient indicesClient = new IndicesClient(this);
 
@@ -187,6 +189,7 @@ public class RestHighLevelClient implements Closeable {
     public RestHighLevelClient(RestClientBuilder restClientBuilder) {
         this(restClientBuilder, Collections.emptyList());
     }
+
 
     /**
      * Creates a {@link RestHighLevelClient} given the low level {@link RestClientBuilder} that allows to build the
@@ -429,6 +432,8 @@ public class RestHighLevelClient implements Closeable {
         return performRequest(request, requestConverter, (response) -> parseEntity(response.getEntity(), entityParser), ignores, headers);
     }
 
+
+
     protected final <Req extends ActionRequest, Resp> Resp performRequest(Req request,
                                                           CheckedFunction<Req, Request, IOException> requestConverter,
                                                           CheckedFunction<Response, Resp, IOException> responseConverter,
@@ -440,7 +445,8 @@ public class RestHighLevelClient implements Closeable {
         Request req = requestConverter.apply(request);
         Response response;
         try {
-            response = client.performRequest(req.getMethod(), req.getEndpoint(), req.getParameters(), req.getEntity(), headers);
+            String end = Strings.isNotBlank(preEndpoint) ? preEndpoint  + req.getEndpoint() :  req.getEndpoint();
+            response = client.performRequest(req.getMethod(), end, req.getParameters(), req.getEntity(), headers);
         } catch (ResponseException e) {
             if (ignores.contains(e.getResponse().getStatusLine().getStatusCode())) {
                 try {
@@ -645,5 +651,9 @@ public class RestHighLevelClient implements Closeable {
             entries.addAll(service.getNamedXContentParsers());
         }
         return entries;
+    }
+
+    public void setPreEndpoint(String preEndpoint) {
+        this.preEndpoint = preEndpoint;
     }
 }

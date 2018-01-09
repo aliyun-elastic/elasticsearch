@@ -91,6 +91,10 @@ Map<String, String> buildMetadataMap = buildMetadataValue.tokenize(';').collectE
 
 // injecting groovy property variables into all projects
 allprojects {
+
+  repositories {
+    maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+  }
   project.ext {
     // for ide hacks...
     isEclipse = System.getProperty("eclipse.launcher") != null || gradle.startParameter.taskNames.contains('eclipse') || gradle.startParameter.taskNames.contains('cleanEclipse')
